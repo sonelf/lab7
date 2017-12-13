@@ -1,0 +1,106 @@
+// See the following on using objects as key/value dictionaries
+// https://stackoverflow.com/questions/1208222/how-to-do-associative-array-hashing-in-javascript
+//Question 4 stuff
+var words = {};
+
+canEmpty=false;
+/** 
+ * Your thoughtful comment here.
+ */
+function emptyStack(stack) {
+    return [];
+}
+
+/**
+ * Print a string out to the terminal, and update its scroll to the
+ * bottom of the screen. You should call this so the screen is
+ * properly scrolled.
+ * @param {Terminal} terminal - The `terminal` object to write to
+ * @param {string}   msg      - The message to print to the terminal
+ */
+function print(terminal, msg) {
+    terminal.print(msg);
+    $("#terminal").scrollTop($('#terminal')[0].scrollHeight + 40);
+}
+
+/** 
+ * Sync up the HTML with the stack in memory
+ * @param {Array[Number]} The stack to render
+ */
+function renderStack(stack) {
+    $("#thestack").empty();
+    stack.slice().reverse().forEach(function(element) {
+        $("#thestack").append("<tr><td>" + element + "</td></tr>");
+    });
+};
+
+/** 
+ * Process a user input, update the stack accordingly, write a
+ * response out to some terminal.
+ * @param {Array[Number]} stack - The stack to work on
+ * @param {string} input - The string the user typed
+ * @param {Terminal} terminal - The terminal object
+ */
+function process(stack, input, terminal) {
+    // The user typed a number
+    if (!(isNaN(Number(input)))) {
+        print(terminal,"pushing " + Number(input));
+        stack.push(Number(input));
+    } else if (input === ".s") {
+        print(terminal, " <" + stack.length + "> " + stack.slice().join(" "));
+    } else if (input === "+") {
+        var first = stack.pop();
+        var second = stack.pop();
+        stack.push(first+second);
+    } else {
+        print(terminal, ":-( Unrecognized input of "+input);
+    }
+    if(stack.length!=0){
+        renderStack(stack);
+    }
+};
+
+function runRepl(terminal, stack) {
+    console.log(stack);
+    terminal.input("Type a forth command:", function(line) {
+        print(terminal, "User typed in: " + line);
+        if(canEmpty){
+            stack=emptyStack(stack);
+            canEmpty=false;
+        }
+        lineArr=line.trim().split(/ +/);
+        for(i=0;i<lineArr.length;i++){
+            process(stack, lineArr[i], terminal);
+        }
+        runRepl(terminal, stack);
+    });
+};
+
+
+$("#reset").click(function(){
+    //because i cannot access the stack here, I just make it look like it's empty when the user clicks the reset button. 
+    //I set a global boolean canEmpty to true inside this function, which I use as my guard to the code inside runRepl that actually will empty the stack before the next command gets processed.
+    //The stack object won't actually empty until you enter a new command, but you can't tell because the stack empties in between entering new input and actually processing it. And the stack already looks empty.
+    canEmpty=true;
+    renderStack([]);
+    $("#thestack").append("<tr><td>" + "empty" + "</td></tr>");
+});
+
+// Whenever the page is finished loading, call this function. 
+// See: https://learn.jquery.com/using-jquery-core/document-ready/
+$(document).ready(function() {
+    var terminal = new Terminal();
+    terminal.setHeight("400px");
+    terminal.blinkingCursor(true);
+    
+    // Find the "terminal" object and change it to add the HTML that
+    // represents the terminal to the end of it.
+    $("#terminal").append(terminal.html);
+
+    var stack = [];
+
+    print(terminal, "Welcome to HaverForth! v0.1");
+    print(terminal, "As you type, the stack (on the right) will be kept in sync");
+
+    runRepl(terminal, stack);
+});
